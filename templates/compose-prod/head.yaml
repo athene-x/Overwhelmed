@@ -1,0 +1,3 @@
+# Production overrides — run with:
+#   docker compose -f compose.yaml -f compose.prod.yaml --env-file .env up -d --build
+services:

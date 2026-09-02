@@ -1,0 +1,5 @@
+# Development stack. For production, layer the overrides on top:
+#   docker compose -f compose.yaml -f compose.prod.yaml --env-file .env up -d --build
+name: {{SLUG}}
+
+services:

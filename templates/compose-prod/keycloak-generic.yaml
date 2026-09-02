@@ -1,0 +1,16 @@
+  keycloak:
+    # Production Keycloak needs a durable database: configure KC_DB /
+    # KC_DB_URL / KC_DB_USERNAME / KC_DB_PASSWORD for your engine —
+    # dev-file storage does not survive container replacement. TLS is
+    # terminated at the proxy; set KEYCLOAK_HOSTNAME in .env.
+    command: ["start", "--import-realm"]
+    environment:
+      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME}
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+

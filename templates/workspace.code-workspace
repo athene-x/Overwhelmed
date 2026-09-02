@@ -1,0 +1,13 @@
+{
+  "folders": [
+    { "name": "Main", "path": "." },
+    { "name": "Domain", "path": "apps/api/src/{{NS}}.Domain" },
+    { "name": "Application", "path": "apps/api/src/{{NS}}.Application" },
+    { "name": "Infrastructure", "path": "apps/api/src/{{NS}}.Infrastructure" },
+    { "name": "Api", "path": "apps/api/src/{{NS}}.Api" },
+    { "name": "UI", "path": "apps/web" },
+    { "name": "Deployment", "path": "deployment" },
+    { "name": "Script", "path": "scripts" }
+  ],
+  "settings": {}
+}

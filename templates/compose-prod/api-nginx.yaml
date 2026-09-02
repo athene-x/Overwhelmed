@@ -1,0 +1,11 @@
+  api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    # Only nginx is reachable from the host in production.
+    ports: !override []
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+

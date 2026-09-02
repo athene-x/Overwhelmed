@@ -1,0 +1,9 @@
+  api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+

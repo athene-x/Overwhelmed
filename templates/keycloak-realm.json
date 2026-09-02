@@ -1,0 +1,36 @@
+{
+  "realm": "{{SLUG}}",
+  "enabled": true,
+  "displayName": "{{ORG}} {{PROJECT}}",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "clients": [
+    {
+      "clientId": "{{SLUG}}-web",
+      "name": "{{PROJECT}} Web (BFF)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "secret": "change-me",
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"]
+    },
+    {
+      "clientId": "{{SLUG}}-api",
+      "name": "{{PROJECT}} API",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": true,
+      "secret": "change-me"
+    }
+  ],
+  "roles": {
+    "realm": [
+      { "name": "user", "description": "Standard application user" },
+      { "name": "admin", "description": "Administrator" }
+    ]
+  }
+}

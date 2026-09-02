@@ -1,0 +1,9 @@
+  postgres:
+    # The database is never published to the host in production.
+    ports: !override []
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+

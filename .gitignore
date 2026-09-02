@@ -1,0 +1,17 @@
+# Build output (re-created by pack.sh)
+dist/
+
+# Local test-scaffold output (wizard runs into this repo)
+apps/
+deployment/
+infrastructure/
+scripts/
+global.json
+*.code-workspace
+.env
+.env.*
+!.env.example
+
+# OS / editors
+.DS_Store
+Thumbs.db
