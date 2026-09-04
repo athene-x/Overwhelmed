@@ -1,24 +1,45 @@
 # Overwhelmed
 
-Overwhelmed is an interactive wizard that scaffolds a full-stack monorepo: an ASP.NET Core
-API laid out as Clean Architecture, a Next.js frontend/BFF, and a Docker
-Compose deployment with PostgreSQL (or SQL Server), Keycloak, and Nginx —
-ready for both development and production.
+Overwhelmed is an interactive wizard that scaffolds a full-stack monorepo:
+an ASP.NET Core API laid out as Clean Architecture, a Next.js frontend/BFF,
+and a Docker Compose deployment with PostgreSQL (or SQL Server), Keycloak,
+and Nginx — ready for both development and production.
 
-The tool lives outside the projects it generates. Point it at any target
-path (created if it does not exist yet) and it lays the skeleton out there.
+It is a single command that lives outside the projects it generates. Point
+it at any directory (created if it does not exist yet) and it lays the
+skeleton out there.
 
-```text
-init-project.sh     the wizard
-next-steps.sh       re-print the status + next-steps summary anytime
-templates/          all generated file content (edit these, not the script)
+## Install
+
+Overwhelmed ships as one self-contained script. Put it on your `PATH` under
+the name `overwhelmed`:
+
+```bash
+mkdir -p ~/.local/bin
+curl -fsSL https://github.com/athene-x/Overwhelmed/releases/latest/download/overwhelmed.sh \
+  -o ~/.local/bin/overwhelmed && chmod +x ~/.local/bin/overwhelmed
 ```
 
-## Requirements
+If `~/.local/bin` is not on your `PATH`, add this line to `~/.zshrc` or
+`~/.bashrc` and open a new terminal:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Check it works:
+
+```bash
+overwhelmed init --help
+```
+
+To update, re-run the `curl` command. To uninstall, delete the file.
+
+### Requirements
 
 | Tool             | Needed for                                            |
 | ---------------- | ----------------------------------------------------- |
-| bash             | running the scripts                                   |
+| bash             | running the command                                   |
 | .NET SDK 10+     | solution + project scaffolding (`dotnet new`)         |
 | git              | only with git init enabled                            |
 | pnpm or npm      | only when scaffolding the web app (create-next-app)   |
@@ -28,12 +49,15 @@ templates/          all generated file content (edit these, not the script)
 ## Quick start
 
 ```bash
-./init-project.sh
+cd ~/code
+overwhelmed init
 ```
 
 The wizard asks, in order:
 
-1. **Target directory** — any path; created if missing (default: current dir)
+1. **Target directory** — relative to where you are, or an absolute path;
+   press Enter for the current directory, or type a name (Tab completes).
+   Created if missing.
 2. **Organization / Project name** — PascalCase; together they form the
    namespace prefix `{Org}.{Project}` (e.g. `Contoso.Billing`)
 3. **Database** — postgres | sqlserver | none (drives compose + env)
@@ -44,10 +68,14 @@ The wizard asks, in order:
 7. **Git init** — `git init` only; nothing is staged and no root
    `.gitignore` is written — bring your own ignore rules
 
-Every prompt has a flag, so unattended runs work too:
+It then shows a plan and asks for confirmation before writing anything.
+
+### Unattended runs
+
+Every prompt has a flag, so scripted runs work too:
 
 ```bash
-./init-project.sh --dir ~/code/Billing --org Contoso --project Billing --yes
+overwhelmed init --dir ~/code/Billing --org Contoso --project Billing --yes
 ```
 
 | Flag | Meaning |
@@ -140,7 +168,8 @@ Notes:
 ## Checking status later
 
 ```bash
-./next-steps.sh --dir {target}     # default: current directory
+cd {target}
+overwhelmed next-steps            # or: overwhelmed next-steps --dir {target}
 ```
 
 Re-prints the wizard's closing summary (it scrolls away easily behind
@@ -148,83 +177,7 @@ create-next-app's output) plus a detected-from-disk checklist: missing
 pieces, `change-me` passwords, the Keycloak hostname placeholder, and the
 `standalone` setting.
 
-## Customizing the output
+## Developing Overwhelmed
 
-Everything the wizard writes comes from `templates/`, rendered by
-concatenating fragments and substituting four placeholders — `{{NS}}`
-(`Contoso.Billing`), `{{ORG}}`, `{{PROJECT}}`, `{{SLUG}}` (lowercased
-project), plus `{{DOTNET_TAG}}` in the API Dockerfile. Everything else
-(compose's own `${VAR}` interpolation included) passes through untouched.
-
-```text
-templates/
-├── compose/         one fragment per dev service: head, api-{db}, web,
-│                    postgres, sqlserver, keycloak, nginx, volumes-{db}
-├── compose-prod/    production override fragments (…-nginx variants strip ports)
-├── env/             .env fragments: base, postgres, sqlserver, keycloak, nginx
-├── Dockerfile.api / Dockerfile.web
-├── nginx.conf
-├── keycloak-realm.json
-├── postgres-init-keycloak.sh
-├── workspace.code-workspace
-└── README.md.tpl
-```
-
-To add a service (say redis): drop `templates/compose/redis.yaml` (and an
-`env/redis.env` if it needs variables), then in `init-project.sh` add a
-toggle and one `fragments+=` line in `write_deployment`. That's the whole
-recipe — keycloak itself is wired exactly this way.
-
-## Packing for distribution
-
-```bash
-./pack.sh
-```
-
-builds two distributables into `dist/`:
-
-- `overwhelmed.tar.gz` — the two scripts + `templates/`; extract
-  anywhere and run `./init-project.sh`
-- `overwhelmed.sh` — a single self-contained executable (~20 KB) with
-  the templates embedded; it self-extracts to a temp dir per run and cleans
-  up after itself. Copy or `curl` just this one file to any machine:
-
-  ```bash
-  ./overwhelmed.sh --dir ~/code/Billing        # scaffold (wizard flags apply)
-  ./overwhelmed.sh next-steps --dir ~/code/Billing
-  ```
-
-Re-run `./pack.sh` after changing the scripts or templates — the bundle is
-generated, never edited by hand. `dist/` is build output; keep it out of
-version control.
-
-## Installing as the `overwhelmed` command
-
-The single-file bundle takes a sub-command as its first argument, so once it
-is on your `PATH` under the name `overwhelmed` you can run:
-
-```bash
-overwhelmed init                       # the wizard, in the current directory
-overwhelmed init --dir ~/code/Billing  # or any target; all wizard flags apply
-overwhelmed next-steps                 # status + next-steps for the current repo
-overwhelmed init --help
-```
-
-**From a checkout** — build and install in one go:
-
-```bash
-./pack.sh --install            # -> /usr/local/bin/overwhelmed (or ~/.local/bin if not writable)
-./pack.sh --install ~/bin      # -> ~/bin/overwhelmed
-```
-
-**From a GitHub release** — no checkout needed; grab the latest bundle:
-
-```bash
-mkdir -p ~/.local/bin
-curl -fsSL https://github.com/athene-x/Overwhelmed/releases/latest/download/overwhelmed.sh \
-  -o ~/.local/bin/overwhelmed && chmod +x ~/.local/bin/overwhelmed
-```
-
-Make sure the install directory is on your `PATH` (for `~/.local/bin`, add
-`export PATH="$HOME/.local/bin:$PATH"` to `~/.zshrc` or `~/.bashrc`).
-To update, re-run the same command; to uninstall, delete the file.
+Want to change what gets generated, run from a checkout, or cut a release?
+See [DEVELOPING.md](DEVELOPING.md).
