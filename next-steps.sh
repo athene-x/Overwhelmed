@@ -12,7 +12,7 @@ set -euo pipefail
 # ---------------------------------------------------------------- output ----
 
 APP_NAME="Overwhelmed"
-APP_VERSION="1.0.0"
+APP_VERSION="2.0.0"
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   BOLD=$'\033[1m'; DIM=$'\033[2m'; RED=$'\033[31m'; GREEN=$'\033[32m'
@@ -45,9 +45,9 @@ ROOT_DIR=$PWD
 
 usage() {
   cat <<USAGE
-${BOLD}Overwhelmed${RESET} — repo status + next-steps message (next-steps.sh)
+${BOLD}Overwhelmed${RESET} — repo status + next-steps message
 
-Usage: ./next-steps.sh [--dir <path>]
+Usage: ${OVERWHELMED_PROG:-./next-steps.sh} [--dir <path>]
 
 Options:
   --dir <path>   Repo root to inspect (default: current directory)
@@ -97,7 +97,9 @@ if [ -n "$SLN" ]; then
   PROJ_COUNT=$(find "$ROOT_DIR/apps/api/src" -maxdepth 2 -name '*.csproj' 2>/dev/null | wc -l | tr -d ' ')
   ok "API solution       $(basename "$SLN") ($PROJ_COUNT projects)"
 else
-  warn "API solution       missing — run init-project.sh with --dir $ROOT_DIR"
+  INIT_CMD="init-project.sh"
+  [ -z "${OVERWHELMED_PROG:-}" ] || INIT_CMD="${OVERWHELMED_PROG% *} init"
+  warn "API solution       missing — run $INIT_CMD --dir $ROOT_DIR"
 fi
 
 if [ "$WEB_READY" = "yes" ]; then

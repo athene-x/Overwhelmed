@@ -11,9 +11,23 @@
 #   ./overwhelmed.sh [init] [wizard options...]     scaffold (default)
 #   ./overwhelmed.sh next-steps [options...]        status summary
 #
+# Install the single file on your PATH as the `overwhelmed` command:
+#   ./pack.sh --install            -> /usr/local/bin/overwhelmed (or ~/.local/bin)
+#   ./pack.sh --install ~/bin      -> ~/bin/overwhelmed
+#
 set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
+
+INSTALL="no"; INSTALL_DIR=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --install) INSTALL="yes"; shift
+               if [ $# -gt 0 ] && [ "${1#-}" = "$1" ]; then INSTALL_DIR=$1; shift; fi ;;
+    -h|--help) sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) printf 'error: unknown option: %s\n' "$1" >&2; exit 1 ;;
+  esac
+done
 
 for f in init-project.sh next-steps.sh templates; do
   [ -e "$f" ] || { printf 'error: %s not found next to pack.sh\n' "$f" >&2; exit 1; }
@@ -45,6 +59,9 @@ case "${1:-}" in
   init|next-steps) cmd=$1; shift ;;
 esac
 
+# how the scripts refer to themselves in --help (e.g. "overwhelmed init")
+export OVERWHELMED_PROG="$(basename "$0") $cmd"
+
 if [ "$cmd" = "next-steps" ]; then
   bash "$tmp/next-steps.sh" "$@"
 else
@@ -60,3 +77,20 @@ chmod +x dist/overwhelmed.sh
 
 printf 'packed:\n'
 ls -lh dist/overwhelmed.tar.gz dist/overwhelmed.sh | awk '{ print "  " $5 "\t" $NF }'
+
+[ "$INSTALL" = "yes" ] || exit 0
+
+if [ -z "$INSTALL_DIR" ]; then
+  if [ -d /usr/local/bin ] && [ -w /usr/local/bin ]; then
+    INSTALL_DIR=/usr/local/bin
+  else
+    INSTALL_DIR="$HOME/.local/bin"
+  fi
+fi
+mkdir -p "$INSTALL_DIR"
+install -m 755 dist/overwhelmed.sh "$INSTALL_DIR/overwhelmed"
+printf 'installed:\n  %s\n' "$INSTALL_DIR/overwhelmed"
+case ":$PATH:" in
+  *":$INSTALL_DIR:"*) printf '\nTry:  overwhelmed init\n' ;;
+  *) printf '\n%s is not on your PATH. Add it, e.g. in ~/.zshrc:\n  export PATH="%s:$PATH"\nThen:  overwhelmed init\n' "$INSTALL_DIR" "$INSTALL_DIR" ;;
+esac

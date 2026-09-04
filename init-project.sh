@@ -17,13 +17,14 @@
 #
 # Run with no arguments for the wizard, or pass flags to run unattended:
 #   ./init-project.sh --dir ~/code/Billing --org Contoso --project Billing --yes
+#   overwhelmed init --dir ~/code/Billing ...      (installed bundle; see pack.sh)
 #
 set -euo pipefail
 
 # ---------------------------------------------------------------- output ----
 
 APP_NAME="Overwhelmed"
-APP_VERSION="1.0.0"
+APP_VERSION="2.0.0"
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   BOLD=$'\033[1m'; DIM=$'\033[2m'; RED=$'\033[31m'; GREEN=$'\033[32m'
@@ -76,9 +77,9 @@ DOTNET_TAG="10.0"       # sdk/aspnet image tag for the API Dockerfile
 
 usage() {
   cat <<USAGE
-${BOLD}Overwhelmed${RESET} — lay out the monorepo skeleton (init-project.sh)
+${BOLD}Overwhelmed${RESET} — lay out the monorepo skeleton
 
-Usage: ./init-project.sh [options]
+Usage: ${OVERWHELMED_PROG:-./init-project.sh} [options]
 
 Options:
   --dir <path>          Repo root to scaffold into — created if it does not
@@ -604,7 +605,11 @@ show_next_steps() {
   info "        docker compose -f compose.yaml -f compose.prod.yaml --env-file .env up -d --build"
   printf '\n'
   printf '    %s○ See this summary again anytime:%s\n' "$DIM" "$RESET"
-  printf '      %s%s/next-steps.sh --dir %s%s\n\n' "$DIM" "$SCRIPT_DIR" "$ROOT_DIR" "$RESET"
+  if [ -n "${OVERWHELMED_PROG:-}" ]; then
+    printf '      %s%s next-steps --dir %s%s\n\n' "$DIM" "${OVERWHELMED_PROG% *}" "$ROOT_DIR" "$RESET"
+  else
+    printf '      %s%s/next-steps.sh --dir %s%s\n\n' "$DIM" "$SCRIPT_DIR" "$ROOT_DIR" "$RESET"
+  fi
 }
 
 # ------------------------------------------------------------------ main ----

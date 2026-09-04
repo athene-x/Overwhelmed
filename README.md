@@ -197,3 +197,34 @@ builds two distributables into `dist/`:
 Re-run `./pack.sh` after changing the scripts or templates — the bundle is
 generated, never edited by hand. `dist/` is build output; keep it out of
 version control.
+
+## Installing as the `overwhelmed` command
+
+The single-file bundle takes a sub-command as its first argument, so once it
+is on your `PATH` under the name `overwhelmed` you can run:
+
+```bash
+overwhelmed init                       # the wizard, in the current directory
+overwhelmed init --dir ~/code/Billing  # or any target; all wizard flags apply
+overwhelmed next-steps                 # status + next-steps for the current repo
+overwhelmed init --help
+```
+
+**From a checkout** — build and install in one go:
+
+```bash
+./pack.sh --install            # -> /usr/local/bin/overwhelmed (or ~/.local/bin if not writable)
+./pack.sh --install ~/bin      # -> ~/bin/overwhelmed
+```
+
+**From a GitHub release** — no checkout needed; grab the latest bundle:
+
+```bash
+mkdir -p ~/.local/bin
+curl -fsSL https://github.com/athene-x/Overwhelmed/releases/latest/download/overwhelmed.sh \
+  -o ~/.local/bin/overwhelmed && chmod +x ~/.local/bin/overwhelmed
+```
+
+Make sure the install directory is on your `PATH` (for `~/.local/bin`, add
+`export PATH="$HOME/.local/bin:$PATH"` to `~/.zshrc` or `~/.bashrc`).
+To update, re-run the same command; to uninstall, delete the file.
