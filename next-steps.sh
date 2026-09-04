@@ -11,19 +11,33 @@ set -euo pipefail
 
 # ---------------------------------------------------------------- output ----
 
+APP_NAME="Overwhelmed"
+APP_VERSION="1.0.0"
+
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   BOLD=$'\033[1m'; DIM=$'\033[2m'; RED=$'\033[31m'; GREEN=$'\033[32m'
-  YELLOW=$'\033[33m'; BLUE=$'\033[34m'; RESET=$'\033[0m'
+  YELLOW=$'\033[33m'; BLUE=$'\033[34m'; MAGENTA=$'\033[35m'; CYAN=$'\033[36m'
+  RESET=$'\033[0m'
 else
-  BOLD=''; DIM=''; RED=''; GREEN=''; YELLOW=''; BLUE=''; RESET=''
+  BOLD=''; DIM=''; RED=''; GREEN=''; YELLOW=''; BLUE=''; MAGENTA=''; CYAN=''; RESET=''
 fi
+ACCENT=$CYAN
+RULE='────────────────────────────────────────────────────────────'
 
-step()  { printf '\n%s==>%s %s%s%s\n' "$BLUE" "$RESET" "$BOLD" "$*" "$RESET"; }
+# banner <tagline>
+banner() {
+  printf '\n  %s%s◆ %s%s %sv%s%s\n' "$BOLD" "$ACCENT" "$APP_NAME" "$RESET" "$DIM" "$APP_VERSION" "$RESET"
+  printf '  %s%s%s\n' "$DIM" "$1" "$RESET"
+  printf '  %s%s%s\n' "$DIM" "$RULE" "$RESET"
+}
+
+step()  { printf '\n  %s◆%s %s%s%s\n' "$ACCENT" "$RESET" "$BOLD" "$*" "$RESET"; }
 info()  { printf '    %s\n' "$*"; }
-ok()    { printf '    %s✓%s %s\n' "$GREEN" "$RESET" "$*"; }
-skip()  { printf '    %s·%s %s%s%s\n' "$DIM" "$RESET" "$DIM" "$*" "$RESET"; }
-warn()  { printf '    %s!%s %s\n' "$YELLOW" "$RESET" "$*"; }
-die()   { printf '\n%serror:%s %s\n' "$RED" "$RESET" "$*" >&2; exit 1; }
+ok()    { printf '    %s✔%s %s\n' "$GREEN" "$RESET" "$*"; }
+skip()  { printf '    %s○ %s%s\n' "$DIM" "$*" "$RESET"; }
+warn()  { printf '    %s▲%s %s\n' "$YELLOW" "$RESET" "$*"; }
+die()   { printf '\n  %s✖ error:%s %s\n' "$RED" "$RESET" "$*" >&2; exit 1; }
+kv()    { printf '    %s%-18s%s %s\n' "$DIM" "$1" "$RESET" "$2"; }
 
 # ------------------------------------------------------------- arguments ----
 
@@ -31,7 +45,7 @@ ROOT_DIR=$PWD
 
 usage() {
   cat <<USAGE
-${BOLD}next-steps.sh${RESET} — repo status + the wizard's next-steps message
+${BOLD}Overwhelmed${RESET} — repo status + next-steps message (next-steps.sh)
 
 Usage: ./next-steps.sh [--dir <path>]
 
@@ -76,7 +90,8 @@ HAS_KEYCLOAK="no"
 
 # ---------------------------------------------------------------- status ----
 
-step "Status — $ROOT_DIR"
+banner "Status · $ROOT_DIR"
+step "Status"
 
 if [ -n "$SLN" ]; then
   PROJ_COUNT=$(find "$ROOT_DIR/apps/api/src" -maxdepth 2 -name '*.csproj' 2>/dev/null | wc -l | tr -d ' ')

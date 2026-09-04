@@ -1,6 +1,6 @@
-# Monorepo Init Wizard
+# Overwhelmed
 
-An interactive wizard that scaffolds a full-stack monorepo: an ASP.NET Core
+Overwhelmed is an interactive wizard that scaffolds a full-stack monorepo: an ASP.NET Core
 API laid out as Clean Architecture, a Next.js frontend/BFF, and a Docker
 Compose deployment with PostgreSQL (or SQL Server), Keycloak, and Nginx —
 ready for both development and production.
@@ -183,15 +183,15 @@ recipe — keycloak itself is wired exactly this way.
 
 builds two distributables into `dist/`:
 
-- `monorepo-wizard.tar.gz` — the two scripts + `templates/`; extract
+- `overwhelmed.tar.gz` — the two scripts + `templates/`; extract
   anywhere and run `./init-project.sh`
-- `monorepo-wizard.sh` — a single self-contained executable (~20 KB) with
+- `overwhelmed.sh` — a single self-contained executable (~20 KB) with
   the templates embedded; it self-extracts to a temp dir per run and cleans
   up after itself. Copy or `curl` just this one file to any machine:
 
   ```bash
-  ./monorepo-wizard.sh --dir ~/code/Billing        # scaffold (wizard flags apply)
-  ./monorepo-wizard.sh next-steps --dir ~/code/Billing
+  ./overwhelmed.sh --dir ~/code/Billing        # scaffold (wizard flags apply)
+  ./overwhelmed.sh next-steps --dir ~/code/Billing
   ```
 
 Re-run `./pack.sh` after changing the scripts or templates — the bundle is

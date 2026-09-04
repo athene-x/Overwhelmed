@@ -22,19 +22,33 @@ set -euo pipefail
 
 # ---------------------------------------------------------------- output ----
 
+APP_NAME="Overwhelmed"
+APP_VERSION="1.0.0"
+
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   BOLD=$'\033[1m'; DIM=$'\033[2m'; RED=$'\033[31m'; GREEN=$'\033[32m'
-  YELLOW=$'\033[33m'; BLUE=$'\033[34m'; RESET=$'\033[0m'
+  YELLOW=$'\033[33m'; BLUE=$'\033[34m'; MAGENTA=$'\033[35m'; CYAN=$'\033[36m'
+  RESET=$'\033[0m'
 else
-  BOLD=''; DIM=''; RED=''; GREEN=''; YELLOW=''; BLUE=''; RESET=''
+  BOLD=''; DIM=''; RED=''; GREEN=''; YELLOW=''; BLUE=''; MAGENTA=''; CYAN=''; RESET=''
 fi
+ACCENT=$CYAN
+RULE='────────────────────────────────────────────────────────────'
 
-step()  { printf '\n%s==>%s %s%s%s\n' "$BLUE" "$RESET" "$BOLD" "$*" "$RESET"; }
+# banner <tagline>
+banner() {
+  printf '\n  %s%s◆ %s%s %sv%s%s\n' "$BOLD" "$ACCENT" "$APP_NAME" "$RESET" "$DIM" "$APP_VERSION" "$RESET"
+  printf '  %s%s%s\n' "$DIM" "$1" "$RESET"
+  printf '  %s%s%s\n' "$DIM" "$RULE" "$RESET"
+}
+
+step()  { printf '\n  %s◆%s %s%s%s\n' "$ACCENT" "$RESET" "$BOLD" "$*" "$RESET"; }
 info()  { printf '    %s\n' "$*"; }
-ok()    { printf '    %s✓%s %s\n' "$GREEN" "$RESET" "$*"; }
-skip()  { printf '    %s·%s %s%s%s\n' "$DIM" "$RESET" "$DIM" "$*" "$RESET"; }
-warn()  { printf '    %s!%s %s\n' "$YELLOW" "$RESET" "$*" >&2; }
-die()   { printf '\n%serror:%s %s\n' "$RED" "$RESET" "$*" >&2; exit 1; }
+ok()    { printf '    %s✔%s %s\n' "$GREEN" "$RESET" "$*"; }
+skip()  { printf '    %s○ %s%s\n' "$DIM" "$*" "$RESET"; }
+warn()  { printf '    %s▲%s %s\n' "$YELLOW" "$RESET" "$*" >&2; }
+die()   { printf '\n  %s✖ error:%s %s\n' "$RED" "$RESET" "$*" >&2; exit 1; }
+kv()    { printf '    %s%-18s%s %s\n' "$DIM" "$1" "$RESET" "$2"; }
 
 # ------------------------------------------------------------- defaults -----
 
@@ -62,7 +76,7 @@ DOTNET_TAG="10.0"       # sdk/aspnet image tag for the API Dockerfile
 
 usage() {
   cat <<USAGE
-${BOLD}init-project.sh${RESET} — lay out the monorepo skeleton
+${BOLD}Overwhelmed${RESET} — lay out the monorepo skeleton (init-project.sh)
 
 Usage: ./init-project.sh [options]
 
@@ -112,15 +126,44 @@ parse_args() {
 
 # --------------------------------------------------------------- helpers ----
 
+# prompt <question> <hint>   — question line + input marker on the next line
+prompt() {
+  printf '  %s?%s %s%s%s%s\n  %s›%s ' "$ACCENT" "$RESET" "$BOLD" "$1" "$RESET" "${2:+ $DIM$2$RESET}" "$DIM" "$RESET"
+}
+# preset <question> <value>  — what -y prints instead of asking
+preset() {
+  printf '  %s○%s %s %s%s%s\n' "$DIM" "$RESET" "$1" "$DIM" "$2" "$RESET"
+}
+
 # ask <var> <question> <default>
 ask() {
   local __var=$1 __q=$2 __def=$3 __ans=""
   if [ "$ASSUME_YES" = "yes" ]; then
-    printf '  %s %s%s%s\n' "$__q" "$DIM" "$__def" "$RESET"
+    preset "$__q" "$__def"
     eval "$__var=\$__def"; return
   fi
-  printf '  %s %s[%s]%s ' "$__q" "$DIM" "$__def" "$RESET"
+  prompt "$__q" "[$__def]"
   IFS= read -r __ans || true
+  [ -n "$__ans" ] || __ans=$__def
+  eval "$__var=\$__ans"
+}
+
+# ask_path <var> <question> <default>
+# Like ask, but with readline enabled: Tab completes file/dir names and the
+# default is pre-filled on the line so it can be edited in place (bash >= 4).
+# Falls back to plain ask when stdin is not a terminal.
+ask_path() {
+  local __var=$1 __q=$2 __def=$3 __ans=""
+  if [ "$ASSUME_YES" = "yes" ] || [ ! -t 0 ]; then
+    ask "$__var" "$__q" "$__def"; return
+  fi
+  if [ "${BASH_VERSINFO[0]}" -ge 4 ]; then
+    prompt "$__q" "(Tab completes)"
+    IFS= read -e -r -i "$__def" __ans || true
+  else
+    prompt "$__q" "${__def:+[$__def] }(Tab completes)"
+    IFS= read -e -r __ans || true
+  fi
   [ -n "$__ans" ] || __ans=$__def
   eval "$__var=\$__ans"
 }
@@ -129,11 +172,11 @@ ask() {
 ask_yn() {
   local __var=$1 __q=$2 __def=$3 __ans=""
   if [ "$ASSUME_YES" = "yes" ]; then
-    printf '  %s %s%s%s\n' "$__q" "$DIM" "$__def" "$RESET"
+    preset "$__q" "$__def"
     eval "$__var=\$__def"; return
   fi
   while :; do
-    printf '  %s %s[%s]%s ' "$__q" "$DIM" "$__def" "$RESET"
+    prompt "$__q" "[$__def]"
     IFS= read -r __ans || true
     [ -n "$__ans" ] || __ans=$__def
     case $(printf '%s' "$__ans" | tr '[:upper:]' '[:lower:]') in
@@ -149,11 +192,11 @@ ask_choice() {
   local __var=$1 __q=$2 __def=$3; shift 3
   local __opts="$*" __ans="" __o
   if [ "$ASSUME_YES" = "yes" ]; then
-    printf '  %s %s%s%s\n' "$__q" "$DIM" "$__def" "$RESET"
+    preset "$__q" "$__def"
     eval "$__var=\$__def"; return
   fi
   while :; do
-    printf '  %s %s(%s) [%s]%s ' "$__q" "$DIM" "${__opts// /, }" "$__def" "$RESET"
+    prompt "$__q" "(${__opts// /, }) [$__def]"
     IFS= read -r __ans || true
     [ -n "$__ans" ] || __ans=$__def
     for __o in $__opts; do
@@ -209,17 +252,27 @@ randomize_secrets() {
 # --------------------------------------------------------------- wizard -----
 
 interview() {
-  printf '\n%s%sMonorepo init wizard%s\n' "$BOLD" "$BLUE" "$RESET"
-  printf '%sFolders + API solution; web is handed to create-next-app.%s\n\n' "$DIM" "$RESET"
+  banner "Scaffold a full-stack monorepo · .NET API · Next.js · Docker Compose"
+  printf '\n'
 
   if [ -z "$ROOT_DIR" ]; then
-    ask ROOT_DIR "Target directory (created if missing)?" "$PWD"
+    printf '  %s○ Current directory%s  %s\n' "$DIM" "$RESET" "$PWD"
+    if [ "$ASSUME_YES" = "yes" ]; then
+      preset "Target directory?" "(current)"
+    else
+      ask_path ROOT_DIR "Target directory? (relative to current; Enter = current; created if missing)" ""
+    fi
+    [ -n "$ROOT_DIR" ] || ROOT_DIR=.
   fi
   case "$ROOT_DIR" in
     "~")   ROOT_DIR=$HOME ;;
     "~/"*) ROOT_DIR="$HOME/${ROOT_DIR#\~/}" ;;
   esac
   [ -n "$ROOT_DIR" ] || die "target directory cannot be empty"
+  case "$ROOT_DIR" in
+    /*) ;;
+    *)  ROOT_DIR="$PWD/${ROOT_DIR#./}" ;;   # relative -> absolute (against cwd)
+  esac
   if [ -d "$ROOT_DIR" ]; then
     ROOT_DIR=$(cd "$ROOT_DIR" && pwd)
     info "Repo root: $ROOT_DIR"
@@ -275,24 +328,25 @@ interview() {
 
 show_plan() {
   step "Plan"
-  info "Target root        $ROOT_DIR"
-  info "Namespace prefix   $NS"
-  info "Database           $DB"
-  info "Nginx              $USE_NGINX"
-  info "Keycloak           $USE_KEYCLOAK"
-  info "Web scaffold       $USE_WEB (create-next-app, interactive)"
-  info "Git init           $INIT_GIT"
+  kv "Target root"      "$ROOT_DIR"
+  kv "Namespace prefix" "$NS"
+  kv "Database"         "$DB"
+  kv "Nginx"            "$USE_NGINX"
+  kv "Keycloak"         "$USE_KEYCLOAK"
+  kv "Web scaffold"     "$USE_WEB $DIM(create-next-app, interactive)$RESET"
+  kv "Git init"         "$INIT_GIT"
+  printf '\n'
 }
 
 confirm_or_exit() {
   if [ "$DRY_RUN" = "yes" ]; then
-    printf '\n%sdry run — nothing written.%s\n' "$DIM" "$RESET"
+    printf '  %s○ dry run — nothing written.%s\n\n' "$DIM" "$RESET"
     exit 0
   fi
   if [ "$ASSUME_YES" != "yes" ]; then
     local confirm
     ask_yn confirm "Scaffold with these settings?" "yes"
-    [ "$confirm" = "yes" ] || { info "aborted."; exit 0; }
+    [ "$confirm" = "yes" ] || { skip "aborted."; exit 0; }
   fi
   require dotnet
   if [ "$INIT_GIT" = "yes" ]; then require git; fi
@@ -527,8 +581,9 @@ init_git_repo() {
 }
 
 show_next_steps() {
-  step "Done"
-  info "Next steps:"
+  step "Done ${GREEN}✔${RESET}"
+  printf '    %s%s%s\n' "$DIM" "$RULE" "$RESET"
+  info "${BOLD}Next steps${RESET}"
   info "  1. cd apps/api && dotnet build"
   if [ "$USE_WEB" = "yes" ]; then
     info "  2. cd apps/web and start the dev server"
@@ -548,8 +603,8 @@ show_next_steps() {
   fi
   info "        docker compose -f compose.yaml -f compose.prod.yaml --env-file .env up -d --build"
   printf '\n'
-  printf '    %sSee this summary again anytime:%s\n' "$DIM" "$RESET"
-  printf '    %s%s/next-steps.sh --dir %s%s\n\n' "$DIM" "$SCRIPT_DIR" "$ROOT_DIR" "$RESET"
+  printf '    %s○ See this summary again anytime:%s\n' "$DIM" "$RESET"
+  printf '      %s%s/next-steps.sh --dir %s%s\n\n' "$DIM" "$SCRIPT_DIR" "$ROOT_DIR" "$RESET"
 }
 
 # ------------------------------------------------------------------ main ----
